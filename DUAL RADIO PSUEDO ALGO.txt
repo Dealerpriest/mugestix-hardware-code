@@ -1,0 +1,82 @@
+//**************************************************************\\
+//--------------------------------------------------------------||
+// PSUEDOOOOOOOO algo for dual radios 							||
+// Beerware license v1.47										||
+//--------------------------------------------------------------||
+//______________________________________________________________//
+
+
+//TODO: Take care of choosing new bridge if one fails. In irq or where. Hmmmm.
+
+
+
+if(failFlag[this])
+{
+	setupRelay(failFlag[this]);
+	latestWorkingBridge = chosenBridge;
+
+	failFlag[this] = -1; // Beside flagging this holds failing node id
+}
+if(sendFlagradio[this])
+{
+	sendFlagradio[this] = false; //Deactivate it immediately so we don't forget!
+
+	//Find a node not taken by the other radio!
+	while(isNodeOccupied(currentNode))
+	{
+		currentNode++;
+		currentNode %= nrOfNodes; //around we go!!
+	}
+
+	//check current relay config and start corresponding write on both radios
+	if(isEdge)
+	{
+		//check edge timeout and update that sheit!
+	}
+	else if (isNormal) //Not occupied that is
+	{
+		//Normal request
+		radio[this].startWrite(&buf, len);// Request sensor data from currentNode
+	}
+	else if(isBridge)
+	{
+		//Bridge that shiiiit!!!
+		waitingForBridge[this] = true;
+		bridgeStamp = micros();
+	}
+}
+////Are we waiting for bridge response?? Update that sheit!
+else if(waitingForBridge[this]){
+	//Timeout if too long
+	if(timeout)
+	{
+		waitingForBridge[this] = false;
+		sendFlagradio[this] = true; // Ok. Time to move on anyways..
+	}
+}
+
+
+ISR(){
+
+	sendFlagradio[this] = true;
+	if(tx)
+	{
+		saveData();//Of course, check ackpacks and all that sheeit
+		currentNode++;
+	}
+	else if(fail)
+	{
+		failFlag[this] = currentNode;
+		currentNode++;
+	}
+	else if (rx)
+	{
+		//Ahaaa. This means we were waiting for relay response.
+		saveData();
+		currentNode++;
+	}
+
+
+
+
+}
